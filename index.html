@@ -602,36 +602,44 @@
         }
 
         window.onload = async function() {
-            document.getElementById('loadingOverlay').classList.add('active');
-            
-            const hwid = getHWIDFromURL();
-            
-            if (!hwid || hwid.trim() === '') {
-                document.getElementById('loadingOverlay').classList.remove('active');
-                document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-                document.getElementById('stepError').classList.add('active');
-                document.querySelector('.progress-bar').style.display = 'none';
-                document.querySelector('.step-indicator').style.display = 'none';
-                return;
-            }
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.classList.add('active');
 
-            userData.hwid = hwid.trim();
-            userData.ipHash = await getIPHash();
-            
-            document.getElementById('hwidDisplay').textContent = userData.hwid;
-            document.getElementById('hwidDisplay2').textContent = userData.hwid;
-            
-            initializeLinkvertise();
-            
-            if (loadKeyData()) {
-                displaySavedKey();
-                goToStep(3);
-            } else {
-                checkVerificationStatus();
-            }
-            
-            document.getElementById('loadingOverlay').classList.remove('active');
-        };
+    const hwid = getHWIDFromURL();
+    if (!hwid || hwid.trim() === '') {
+        loadingOverlay.classList.remove('active');
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById('stepError').classList.add('active');
+        document.querySelector('.progress-bar').style.display = 'none';
+        document.querySelector('.step-indicator').style.display = 'none';
+        return;
+    }
+
+    userData.hwid = hwid.trim();
+
+    // safer IP hash generation with fallback
+    try {
+        userData.ipHash = await getIPHash();
+    } catch {
+        userData.ipHash = Math.random().toString(36).substring(2, 18);
+    }
+
+    document.getElementById('hwidDisplay').textContent = userData.hwid;
+    document.getElementById('hwidDisplay2').textContent = userData.hwid;
+
+    initializeLinkvertise();
+
+    if (loadKeyData()) {
+        displaySavedKey();
+        goToStep(3);
+    } else {
+        // don't start an infinite verification check
+        document.getElementById('status1').textContent = 'Select a verification method to continue';
+    }
+
+    loadingOverlay.classList.remove('active');
+};
+
 
         function displaySavedKey() {
             const now = new Date();
